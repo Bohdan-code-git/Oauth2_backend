@@ -19,7 +19,7 @@ public class YoutubeController : ControllerBase
     [HttpGet("login")]
     public IActionResult Login()
     {
-        var url = _youtubeService.GenerateOAuthUrl(_config["YoutubeOAuth:CallbackUrl"]);
+        var url = _youtubeService.GenerateOAuthUrl();
         return Redirect(url);
     }
     [HttpGet("callback")]
@@ -30,7 +30,7 @@ public class YoutubeController : ControllerBase
 
         try
         {
-            var token = await _youtubeService.ExchangeCodeOnTokenAsync(code, _config["YoutubeOAuth:CallbackUrl"]);
+            var token = await _youtubeService.ExchangeCodeOnTokenAsync(code);
             return Ok(token);
         }
         catch (Exception ex)

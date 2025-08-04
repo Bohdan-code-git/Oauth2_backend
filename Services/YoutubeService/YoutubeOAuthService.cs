@@ -18,11 +18,11 @@ public class YoutubeOAuthService : IYoutubeOAuthService
         _config = config;
     }
 
-    public string GenerateOAuthUrl(string redirectUri, string state = null)
+    public string GenerateOAuthUrl(string state = null)
     {
         var queryParams = HttpUtility.ParseQueryString(string.Empty);
         queryParams["client_id"] = _config["YoutubeOAuth:ClientId"];
-        queryParams["redirect_uri"] = redirectUri;
+        queryParams["redirect_uri"] = _config["YoutubeOAuth:CallbackUrl"];
         queryParams["response_type"] = "code";
         queryParams["scope"] = Scope;
         queryParams["access_type"] = "offline";
@@ -33,14 +33,14 @@ public class YoutubeOAuthService : IYoutubeOAuthService
         return $"{AuthorizationEndpoint}?{queryParams}";
     }
 
-    public async Task<GoogleTokenResponse> ExchangeCodeOnTokenAsync(string code, string redirectUri)
+    public async Task<GoogleTokenResponse> ExchangeCodeOnTokenAsync(string code)
     {
         var data = new Dictionary<string, string>
     {
         { "code", code },
         { "client_id", _config["YoutubeOAuth:ClientId"] },
         { "client_secret", _config["YoutubeOAuth:ClientSecret"] },
-        { "redirect_uri", redirectUri },
+        { "redirect_uri", _config["YoutubeOAuth:CallbackUrl"] },
         { "grant_type", "authorization_code" }
     };
 
