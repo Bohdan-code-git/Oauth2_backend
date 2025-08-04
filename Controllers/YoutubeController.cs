@@ -5,20 +5,21 @@ using Microsoft.AspNetCore.Mvc;
 [ApiController]
 public class YoutubeController : ControllerBase
 {
+    private readonly IConfiguration _config;
     private readonly IYoutubeOAuthService _youtubeService;
-    private const string redirectUrl = "http://localhost:4200/profile";
     private readonly ILogger<YoutubeOAuthService> _logger;
 
-    public YoutubeController(IYoutubeOAuthService googleService, ILogger<YoutubeOAuthService> logger)
+    public YoutubeController(IYoutubeOAuthService googleService, ILogger<YoutubeOAuthService> logger, IConfiguration config)
     {
         _youtubeService = googleService;
         _logger = logger;
+        _config = config;
     }
 
     [HttpGet("login")]
     public IActionResult Login()
     {
-        var url = _youtubeService.GenerateOAuthUrl(redirectUrl);
+        var url = _youtubeService.GenerateOAuthUrl(_config["YoutubeOAuth:RedirectUri"]);
         return Redirect(url);
     }
     [HttpGet("callback")]
@@ -29,7 +30,7 @@ public class YoutubeController : ControllerBase
 
         try
         {
-            var token = await _youtubeService.ExchangeCodeOnTokenAsync(code, redirectUrl);
+            var token = await _youtubeService.ExchangeCodeOnTokenAsync(code, _config["YoutubeOAuth:RedirectUri"]);
             return Ok(token);
         }
         catch (Exception ex)
