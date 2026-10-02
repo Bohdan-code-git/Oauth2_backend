@@ -164,9 +164,7 @@ public sealed class OAuthProviderClient(
 
     public string GetFrontendOrigin()
     {
-        var origin = configuration["RENDER_EXTERNAL_URL"]
-            ?? configuration["App:FrontendOrigin"]
-            ?? configuration["App:PublicOrigin"];
+        var origin = GetFrontendOriginCandidate();
         if (!IsSafeOrigin(origin))
             throw new InvalidOperationException("App:FrontendOrigin must be an absolute HTTPS origin.");
 
@@ -296,14 +294,31 @@ public sealed class OAuthProviderClient(
     }
 
     private string? GetPublicOrigin() =>
-        configuration["RENDER_EXTERNAL_URL"] ?? configuration["App:PublicOrigin"];
+        GetPreferredConfiguredOrigin("App:PublicOrigin")
+        ?? configuration["RENDER_EXTERNAL_URL"]
+        ?? configuration["App:PublicOrigin"];
+
+    private string? GetFrontendOriginCandidate() =>
+        GetPreferredConfiguredOrigin("App:FrontendOrigin")
+        ?? GetPreferredConfiguredOrigin("App:PublicOrigin")
+        ?? configuration["RENDER_EXTERNAL_URL"]
+        ?? configuration["App:FrontendOrigin"]
+        ?? configuration["App:PublicOrigin"];
+
+    private string? GetPreferredConfiguredOrigin(string key)
+    {
+        var origin = configuration[key];
+        return IsSafeOrigin(origin)
+            && Uri.TryCreate(origin, UriKind.Absolute, out var uri)
+            && !uri.IsLoopback
+                ? origin
+                : null;
+    }
 
     private bool HaveCompatibleOrigins()
     {
         var publicOrigin = GetPublicOrigin();
-        var frontendOrigin = configuration["RENDER_EXTERNAL_URL"]
-            ?? configuration["App:FrontendOrigin"]
-            ?? configuration["App:PublicOrigin"];
+        var frontendOrigin = GetFrontendOriginCandidate();
         if (!IsSafeOrigin(publicOrigin)
             || !IsSafeOrigin(frontendOrigin)
             || !Uri.TryCreate(publicOrigin, UriKind.Absolute, out var publicUri)

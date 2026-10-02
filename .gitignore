@@ -408,3 +408,16 @@ appsettings.Development.json
 App_Data/
 __pycache__/
 *.py[cod]
+
+# Angular frontend and shared deployment workspace
+**/node_modules/
+**/.angular/
+**/dist/
+**/TestResults/
+**/.DS_Store
+**/.env
+**/.env.*
+**/*.env
+**/*.Local.json
+**/data-protection-keys/
+**/workspaces/

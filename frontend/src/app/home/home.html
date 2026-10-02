@@ -1,0 +1,186 @@
+<main class="page" id="top">
+  <header class="topbar">
+    <a class="brand" href="#top" aria-label="Switchboard home">Switchboard</a>
+  </header>
+
+  <section class="intro" aria-labelledby="page-title">
+    <div>
+      <h1 id="page-title">Connected accounts</h1>
+      <p class="intro-copy">Connect your own Google, GitHub, and Discord accounts. See the profiles and which connection needs attention.</p>
+    </div>
+    <p class="flow-note"><strong>Server-side OAuth</strong><span>One-time state per provider. Tokens stay on the server.</span></p>
+  </section>
+
+  @if (notice(); as currentNotice) {
+    <div class="notice" [class.notice--error]="currentNotice.error" [attr.role]="currentNotice.error ? 'alert' : 'status'">
+      <p>{{ currentNotice.message }}</p>
+      <button type="button" aria-label="Dismiss message" (click)="notice.set(null)">Dismiss</button>
+    </div>
+  }
+
+  @if (loading()) {
+    <p class="page-state" role="status">Loading account connections…</p>
+  } @else if (loadError()) {
+    <div class="page-state page-state--error" role="alert">
+      <p>We could not load your accounts. Check the backend and try again.</p>
+      <button class="button button--primary retry-action" type="button" (click)="loadWorkspace()">Retry</button>
+    </div>
+  } @else if (snapshot(); as current) {
+    <section class="connection-summary" aria-labelledby="connection-summary-title">
+      <h2 id="connection-summary-title" class="summary-title">Connection status</h2>
+      <div class="summary-grid">
+        <div class="summary-item">
+          <span>Connected</span>
+          <strong>{{ connectionSummary().connected }} / {{ providerOrder.length }}</strong>
+        </div>
+        <div class="summary-item" [class.summary-item--attention]="connectionSummary().attention > 0">
+          <span>Needs attention</span>
+          <strong>{{ connectionSummary().attention }}</strong>
+        </div>
+        <div class="summary-item">
+          <span>Can refresh</span>
+          <strong>{{ connectionSummary().refreshable }}</strong>
+        </div>
+      </div>
+    </section>
+
+    @if (current.demoMode) {
+      <p class="mode-note"><strong>Demo mode.</strong> Provider sign-in is disabled until server credentials are set.</p>
+    }
+
+    <section class="account-grid" aria-label="Provider accounts">
+      @for (provider of providerOrder; track provider) {
+        @if (connectionFor(provider); as connection) {
+          <article class="connection-card" [attr.data-provider]="connection.provider">
+            <header class="card-heading">
+              <h2>{{ connection.label }}</h2>
+              <p
+                class="status"
+                [class.status--connected]="connection.status === 'connected'"
+                [class.status--attention]="connection.status === 'reauth_required'"
+              >
+                <span class="status-dot" aria-hidden="true"></span>{{ statusLabel(connection.status) }}
+              </p>
+            </header>
+
+            @if (profileName(connection); as name) {
+              <div class="profile">
+                @if (connection.profile?.avatarUrl) {
+                  <img [src]="connection.profile?.avatarUrl" alt="" referrerpolicy="no-referrer" />
+                }
+                <div>
+                  <p class="profile-name">{{ name }}</p>
+                  @if (profileIdentifier(connection); as identifier) {
+                    <p class="profile-detail">{{ identifier }}</p>
+                  }
+                  @if (profileEmail(connection); as email) {
+                    <p class="profile-detail">{{ email }}</p>
+                  }
+                  @if (connection.profile?.profileUrl) {
+                    <a class="profile-link" [href]="connection.profile?.profileUrl" target="_blank" rel="noopener noreferrer">View profile</a>
+                  }
+                </div>
+              </div>
+            } @else {
+              <p class="empty-account">No account connected</p>
+            }
+
+            @if (connection.message && connection.status !== 'not_configured') {
+              <p class="connection-message">{{ connection.message }}</p>
+            }
+            @if (setupMessage(connection); as setup) {
+              <p class="setup-message">{{ setup }}</p>
+            }
+
+            <details class="oauth-inspector">
+              <summary>OAuth details</summary>
+              @if (oauthContractFor(connection.provider); as contract) {
+                <dl class="oauth-facts">
+                  <div><dt>Flow</dt><dd>Authorization Code</dd></div>
+                  <div><dt>PKCE</dt><dd>{{ pkceLabel(connection.provider) }}</dd></div>
+                  <div><dt>Authorize at</dt><dd><code>{{ contract.authorizationEndpoint }}</code></dd></div>
+                  <div><dt>Exchange at</dt><dd><code>{{ contract.tokenEndpoint }}</code></dd></div>
+                  <div>
+                    <dt>Callback</dt>
+                    <dd>
+                      @if (contract.callbackUri) {
+                        <code>{{ contract.callbackUri }}</code>
+                        <button class="text-button copy-callback" type="button" (click)="copyCallback(connection.provider)">Copy URL</button>
+                      } @else {
+                        <span>Not resolved by the backend</span>
+                      }
+                    </dd>
+                  </div>
+                  <div>
+                    <dt>Requested scopes</dt>
+                    <dd class="scope-list">
+                      @for (scope of contract.scopes; track scope) {
+                        <code>{{ scope }}</code>
+                      }
+                    </dd>
+                  </div>
+                  <div>
+                    <dt>Granted scopes</dt>
+                    <dd>{{ grantedScopesLabel(connection) }}</dd>
+                  </div>
+                  <div>
+                    <dt>Access expires</dt>
+                    <dd>{{ accessTokenExpiryLabel(connection) }}</dd>
+                  </div>
+                  <div>
+                    <dt>Refresh token</dt>
+                    <dd>{{ refreshTokenLabel(connection) }}</dd>
+                  </div>
+                  <div>
+                    <dt>Profile API</dt>
+                    <dd>
+                      @for (endpoint of contract.profileEndpoints; track endpoint) {
+                        <code>{{ endpoint }}</code>
+                      }
+                    </dd>
+                  </div>
+                </dl>
+                <p class="inspector-note">Tokens stay on the server. Checking a grant calls the profile API and renews an expired access token when possible.</p>
+              } @else {
+                <p class="inspector-note">OAuth details are unavailable.</p>
+              }
+            </details>
+
+            <p class="freshness"><span>Last checked</span>{{ timeAgo(connection.lastSyncedAt) }}</p>
+
+            <footer class="card-actions">
+              <button
+                class="button button--primary connect-action"
+                type="button"
+                (click)="startConnection(connection.provider)"
+              >
+                {{ connectLabel(connection) }}
+              </button>
+              @if (connection.status === 'connected') {
+                <button
+                  class="button verify-grant"
+                  type="button"
+                  (click)="verifyGrant(connection.provider)"
+                  [disabled]="busy() !== null"
+                  [attr.aria-label]="'Check OAuth grant for ' + connection.label"
+                >
+                  {{ busy() === connection.provider ? 'Checking…' : 'Check grant' }}
+                </button>
+              }
+              @if (connection.status === 'connected' || connection.status === 'reauth_required') {
+                <button
+                  class="text-button"
+                  type="button"
+                  (click)="disconnect(connection)"
+                  [disabled]="busy() !== null"
+                >
+                  Remove
+                </button>
+              }
+            </footer>
+          </article>
+        }
+      }
+    </section>
+  }
+</main>

@@ -505,6 +505,30 @@ public sealed class OAuthSecurityTests
     }
 
     [Fact]
+    public void PagesOriginOverridesRenderOriginForProxiedOAuthCallbacks()
+    {
+        var settings = new Dictionary<string, string?>
+        {
+            ["App:PublicOrigin"] = "https://switchboard.pages.dev",
+            ["App:FrontendOrigin"] = "https://switchboard.pages.dev",
+            ["RENDER_EXTERNAL_URL"] = "https://switchboard-api.onrender.com",
+            ["OAuth:Github:ClientId"] = "github-client-id",
+            ["OAuth:Github:ClientSecret"] = "github-client-secret"
+        };
+        var client = new OAuthProviderClient(
+            new ConfigurationBuilder().AddInMemoryCollection(settings).Build(),
+            new StubHttpClientFactory(),
+            TimeProvider.System);
+
+        var github = client.GetPublicProviderConfiguration().Providers
+            .Single(provider => provider.Provider == "github");
+
+        Assert.True(github.Configured);
+        Assert.Equal("https://switchboard.pages.dev/api/oauth/github/callback", github.CallbackUri);
+        Assert.Equal("https://switchboard.pages.dev", client.GetFrontendOrigin());
+    }
+
+    [Fact]
     public void ExampleSecretPlaceholderCannotEnableALiveProvider()
     {
         var settings = new Dictionary<string, string?>

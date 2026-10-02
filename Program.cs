@@ -162,6 +162,7 @@ app.Use(async (context, next) =>
     }
     await next();
 });
+app.MapGet("/health", () => Results.Ok(new { status = "ok" }));
 app.UseDefaultFiles();
 app.UseStaticFiles();
 app.MapControllers();

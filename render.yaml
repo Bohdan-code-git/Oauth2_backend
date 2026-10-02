@@ -1,0 +1,37 @@
+services:
+  - type: web
+    name: switchboard-api
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    healthCheckPath: /health
+    envVars:
+      - key: ASPNETCORE_ENVIRONMENT
+        value: Production
+      - key: ASPNETCORE_URLS
+        value: http://+:10000
+      - key: App__ForceDemo
+        value: "false"
+      - key: App__PublicOrigin
+        sync: false
+      - key: App__FrontendOrigin
+        sync: false
+      - key: DataProtection__KeysPath
+        value: /tmp/switchboard/data-protection-keys
+      - key: DataProtection__EphemeralCertificate
+        value: "true"
+      - key: Persistence__WorkspaceDirectory
+        value: /tmp/switchboard/workspaces
+      - key: OAuth__Google__ClientId
+        sync: false
+      - key: OAuth__Google__ClientSecret
+        sync: false
+      - key: OAuth__Github__ClientId
+        sync: false
+      - key: OAuth__Github__ClientSecret
+        sync: false
+      - key: OAuth__Discord__ClientId
+        sync: false
+      - key: OAuth__Discord__ClientSecret
+        sync: false
