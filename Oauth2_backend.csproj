@@ -4,11 +4,13 @@
     <TargetFramework>net8.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+    <UserSecretsId>switchboard-local-oauth-demo</UserSecretsId>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Swashbuckle.AspNetCore" Version="9.0.3" />
-    <PackageReference Include="Swashbuckle.AspNetCore.Swagger" Version="9.0.3" />
+    <Compile Remove="Tests/**/*.cs" />
+    <Content Remove="Tests/**" />
+    <None Remove="Tests/**" />
   </ItemGroup>
 
 </Project>
